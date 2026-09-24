@@ -149,6 +149,12 @@ def get_current_user(authorization: str = Header(default="")):
     return {"username": u["username"], "role": u["role"]}
 
 
+def require_admin(user=Depends(get_current_user)):
+    if user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Bu işlem için admin yetkisi gerekli")
+    return user
+
+
 seed_staff()
 
 app = FastAPI(title="TrapClub API")
@@ -175,6 +181,12 @@ class AnnouncementIn(BaseModel):
     tag: str
     body: str
     image: Optional[str] = None
+
+
+class StaffIn(BaseModel):
+    username: str
+    password: str
+    role: str = "mod"
 
 
 # ---------- Public endpoints ----------
@@ -324,6 +336,42 @@ async def delete_announcement(ann_id: str, user=Depends(get_current_user)):
     if len(new_items) == len(items):
         raise HTTPException(status_code=404, detail="Duyuru bulunamadı")
     save_announcements(new_items)
+    return {"ok": True}
+
+
+# ---------- Staff management (admin only) ----------
+@api_router.get("/admin/staff")
+async def list_staff(user=Depends(require_admin)):
+    return [{"username": u["username"], "role": u["role"]} for u in load_staff()]
+
+
+@api_router.post("/admin/staff")
+async def create_staff(payload: StaffIn, user=Depends(require_admin)):
+    username = payload.username.strip()
+    if not username or not payload.password:
+        raise HTTPException(status_code=400, detail="Kullanıcı adı ve şifre zorunlu")
+    if payload.role not in ("admin", "mod"):
+        raise HTTPException(status_code=400, detail="Rol 'admin' veya 'mod' olmalı")
+    users = load_staff()
+    if any(u["username"].lower() == username.lower() for u in users):
+        raise HTTPException(status_code=409, detail="Bu kullanıcı adı zaten var")
+    users.append({"username": username, "password_hash": hash_password(payload.password), "role": payload.role})
+    save_staff(users)
+    return {"username": username, "role": payload.role}
+
+
+@api_router.delete("/admin/staff/{username}")
+async def delete_staff(username: str, user=Depends(require_admin)):
+    if username.lower() == user["username"].lower():
+        raise HTTPException(status_code=400, detail="Kendi hesabını silemezsin")
+    users = load_staff()
+    target = next((u for u in users if u["username"].lower() == username.lower()), None)
+    if not target:
+        raise HTTPException(status_code=404, detail="Kullanıcı bulunamadı")
+    if target["role"] == "admin" and sum(1 for u in users if u["role"] == "admin") <= 1:
+        raise HTTPException(status_code=400, detail="Son admin hesabı silinemez")
+    users = [u for u in users if u["username"].lower() != username.lower()]
+    save_staff(users)
     return {"ok": True}
 
 

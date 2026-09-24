@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { motion } from "framer-motion";
 import {
-  LogOut, Save, Plus, Trash2, Pencil, ShieldCheck, BookText, Megaphone, X, ArrowLeft,
+  LogOut, Save, Plus, Trash2, Pencil, ShieldCheck, BookText, Megaphone, X, ArrowLeft, UserCog,
 } from "lucide-react";
 import { toast, Toaster } from "sonner";
 
@@ -213,6 +213,81 @@ const AnnouncementsManager = () => {
   );
 };
 
+const StaffManager = ({ currentUser }) => {
+  const [staff, setStaff] = useState([]);
+  const [form, setForm] = useState({ username: "", password: "", role: "mod" });
+  const [busy, setBusy] = useState(false);
+
+  const load = () => axios.get(`${API}/admin/staff`, { headers: authHeader() }).then((r) => setStaff(r.data)).catch(() => {});
+  useEffect(() => { load(); }, []);
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setBusy(true);
+    try {
+      await axios.post(`${API}/admin/staff`, form, { headers: authHeader() });
+      toast.success("Yetkili eklendi");
+      setForm({ username: "", password: "", role: "mod" });
+      load();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || "Eklenemedi");
+    } finally { setBusy(false); }
+  };
+
+  const remove = async (username) => {
+    if (!window.confirm(`${username} hesabı silinsin mi?`)) return;
+    try {
+      await axios.delete(`${API}/admin/staff/${encodeURIComponent(username)}`, { headers: authHeader() });
+      toast.success("Yetkili silindi");
+      load();
+    } catch (err) { toast.error(err.response?.data?.detail || "Silinemedi"); }
+  };
+
+  return (
+    <div className="grid md:grid-cols-2 gap-6" data-testid="staff-manager">
+      <div className="tc-panel p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <UserCog className="w-5 h-5 text-lime-400" />
+          <h2 className="text-lg font-bold tracking-wide uppercase">Yetkililer</h2>
+        </div>
+        <div className="space-y-2">
+          {staff.map((s) => (
+            <div key={s.username} className="tc-ann flex items-center justify-between" data-testid={`staff-${s.username}`}>
+              <div>
+                <div className="font-semibold text-sm">{s.username}</div>
+                <span className="tc-tag mt-1 inline-block">{s.role}</span>
+              </div>
+              {s.username.toLowerCase() !== currentUser.username.toLowerCase() && (
+                <button onClick={() => remove(s.username)} className="tc-icon-btn tc-icon-danger" data-testid={`delete-staff-${s.username}`}>
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+      <form onSubmit={submit} className="tc-panel p-6 h-fit" data-testid="staff-form">
+        <h3 className="font-bold uppercase tracking-wide mb-4">Yeni Yetkili</h3>
+        <label className="tc-stat-label">Kullanıcı Adı</label>
+        <input className="tc-input w-full mt-1 mb-3" value={form.username} required
+          onChange={(e) => setForm({ ...form, username: e.target.value })} data-testid="staff-username-input" />
+        <label className="tc-stat-label">Şifre</label>
+        <input type="password" className="tc-input w-full mt-1 mb-3" value={form.password} required
+          onChange={(e) => setForm({ ...form, password: e.target.value })} data-testid="staff-password-input" />
+        <label className="tc-stat-label">Rol</label>
+        <select className="tc-input w-full mt-1 mb-5" value={form.role}
+          onChange={(e) => setForm({ ...form, role: e.target.value })} data-testid="staff-role-select">
+          <option value="mod">mod (yetkili)</option>
+          <option value="admin">admin (yönetici)</option>
+        </select>
+        <button type="submit" disabled={busy} className="tc-discord w-full justify-center" data-testid="staff-submit-button">
+          <Plus className="w-4 h-4" /> Ekle
+        </button>
+      </form>
+    </div>
+  );
+};
+
 export default function Yonetim() {
   const [user, setUser] = useState(null);
   const [checking, setChecking] = useState(true);
@@ -260,8 +335,14 @@ export default function Yonetim() {
             data-testid="tab-knowledge"><BookText className="w-4 h-4" /> Bilgi Bankası</button>
           <button onClick={() => setTab("announcements")} className={`tc-tabbtn ${tab === "announcements" ? "tc-tabbtn-on" : ""}`}
             data-testid="tab-announcements"><Megaphone className="w-4 h-4" /> Duyurular</button>
+          {user.role === "admin" && (
+            <button onClick={() => setTab("staff")} className={`tc-tabbtn ${tab === "staff" ? "tc-tabbtn-on" : ""}`}
+              data-testid="tab-staff"><UserCog className="w-4 h-4" /> Yetkililer</button>
+          )}
         </div>
-        {tab === "knowledge" ? <KnowledgeEditor /> : <AnnouncementsManager />}
+        {tab === "knowledge" && <KnowledgeEditor />}
+        {tab === "announcements" && <AnnouncementsManager />}
+        {tab === "staff" && user.role === "admin" && <StaffManager currentUser={user} />}
       </main>
       <Toaster theme="dark" position="top-center" />
     </div>
