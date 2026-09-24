@@ -1,5 +1,5 @@
 """
-TrapClub FastAPI Backend - api.trapclub.net icin TAM (drop-in) surum + Yetkili Paneli.
+TrapClub FastAPI Backend - api.trapclub.net icin TAM (drop-in) surum + Yetkili Paneli + Aktivite Kaydi.
 
 Public:
   GET  /api/health
@@ -9,14 +9,17 @@ Public:
 Yetkili (JWT Bearer):
   POST   /api/auth/login    {username,password} -> {access_token, user}
   GET    /api/auth/me
-  GET    /api/admin/knowledge
-  PUT    /api/admin/knowledge            {content}
-  POST   /api/admin/announcements        {title,tag,body,image?}
-  PUT    /api/admin/announcements/{id}
-  DELETE /api/admin/announcements/{id}
+  GET/PUT /api/admin/knowledge
+  POST/PUT/DELETE /api/admin/announcements
+Admin (rol=admin):
+  GET    /api/admin/staff
+  POST   /api/admin/staff   {username,password,role}
+  DELETE /api/admin/staff/{username}
+  GET    /api/admin/activity        (islem gecmisi)
 
-Ayni klasorde bulunmasi gerekenler: knowledge_base.md, announcements.json
-(staff_users.json ilk calismada otomatik olusur).
+Panel: GET /yonetim  (admin.html)
+Ayni klasorde: knowledge_base.md, announcements.json, admin.html
+(staff_users.json ve activity_log.json otomatik olusur).
 """
 import os
 import json
@@ -51,10 +54,12 @@ AI_MODEL = os.environ.get("AI_MODEL", "gpt-5.6-terra")
 JWT_SECRET = os.environ.get("JWT_SECRET", "change-this-secret")
 JWT_ALG = "HS256"
 TOKEN_HOURS = 12
+ACTIVITY_MAX = 500
 
 KB_PATH = ROOT_DIR / "knowledge_base.md"
 ANN_PATH = ROOT_DIR / "announcements.json"
 STAFF_PATH = ROOT_DIR / "staff_users.json"
+ACTIVITY_PATH = ROOT_DIR / "activity_log.json"
 ADMIN_HTML = ROOT_DIR / "admin.html"
 
 
@@ -81,6 +86,28 @@ def load_announcements():
 
 def save_announcements(items):
     ANN_PATH.write_text(json.dumps(items, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def load_activity():
+    try:
+        return json.loads(ACTIVITY_PATH.read_text(encoding="utf-8"))
+    except Exception:
+        return []
+
+
+def log_activity(username: str, action: str, detail: str = ""):
+    try:
+        items = load_activity()
+        items.insert(0, {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "username": username,
+            "action": action,
+            "detail": detail,
+        })
+        del items[ACTIVITY_MAX:]
+        ACTIVITY_PATH.write_text(json.dumps(items, ensure_ascii=False, indent=2), encoding="utf-8")
+    except Exception as e:
+        logger.warning(f"activity log yazilamadi: {e}")
 
 
 def build_system_prompt() -> str:
@@ -304,6 +331,7 @@ async def login(req: LoginRequest):
     if not u or not verify_password(req.password, u["password_hash"]):
         raise HTTPException(status_code=401, detail="Kullanici adi veya sifre hatali")
     token = create_token(u["username"], u["role"])
+    log_activity(u["username"], "Giris yapti")
     return {"access_token": token, "token_type": "bearer", "user": {"username": u["username"], "role": u["role"]}}
 
 
@@ -312,7 +340,7 @@ async def me(user=Depends(get_current_user)):
     return user
 
 
-# ---------- Admin (protected) ----------
+# ---------- Admin: knowledge ----------
 @router.get("/admin/knowledge")
 async def get_knowledge(user=Depends(get_current_user)):
     return {"content": load_knowledge_base()}
@@ -321,9 +349,11 @@ async def get_knowledge(user=Depends(get_current_user)):
 @router.put("/admin/knowledge")
 async def update_knowledge(payload: KnowledgeUpdate, user=Depends(get_current_user)):
     save_knowledge_base(payload.content)
+    log_activity(user["username"], "Bilgi bankasi guncellendi")
     return {"ok": True, "message": "Bilgi bankasi guncellendi"}
 
 
+# ---------- Admin: announcements ----------
 @router.post("/admin/announcements")
 async def create_announcement(payload: AnnouncementIn, user=Depends(get_current_user)):
     items = load_announcements()
@@ -340,6 +370,7 @@ async def create_announcement(payload: AnnouncementIn, user=Depends(get_current_
     }
     items.insert(0, item)
     save_announcements(items)
+    log_activity(user["username"], "Duyuru ekledi", payload.title)
     return item
 
 
@@ -357,20 +388,23 @@ async def update_announcement(ann_id: str, payload: AnnouncementIn, user=Depends
         "updated_at": datetime.now(timezone.utc).isoformat(),
     })
     save_announcements(items)
+    log_activity(user["username"], "Duyuru duzenledi", payload.title)
     return item
 
 
 @router.delete("/admin/announcements/{ann_id}")
 async def delete_announcement(ann_id: str, user=Depends(get_current_user)):
     items = load_announcements()
+    target = next((x for x in items if x["id"] == ann_id), None)
     new_items = [x for x in items if x["id"] != ann_id]
     if len(new_items) == len(items):
         raise HTTPException(status_code=404, detail="Duyuru bulunamadi")
     save_announcements(new_items)
+    log_activity(user["username"], "Duyuru sildi", target["title"] if target else ann_id)
     return {"ok": True}
 
 
-# ---------- Staff management (admin only) ----------
+# ---------- Admin: staff management (admin only) ----------
 @router.get("/admin/staff")
 async def list_staff(user=Depends(require_admin)):
     return [{"username": u["username"], "role": u["role"]} for u in load_staff()]
@@ -388,6 +422,7 @@ async def create_staff(payload: StaffIn, user=Depends(require_admin)):
         raise HTTPException(status_code=409, detail="Bu kullanici adi zaten var")
     users.append({"username": username, "password_hash": hash_password(payload.password), "role": payload.role})
     save_staff(users)
+    log_activity(user["username"], "Yetkili ekledi", f"{username} ({payload.role})")
     return {"username": username, "role": payload.role}
 
 
@@ -403,7 +438,14 @@ async def delete_staff(username: str, user=Depends(require_admin)):
         raise HTTPException(status_code=400, detail="Son admin hesabi silinemez")
     users = [u for u in users if u["username"].lower() != username.lower()]
     save_staff(users)
+    log_activity(user["username"], "Yetkili sildi", target["username"])
     return {"ok": True}
+
+
+# ---------- Admin: activity log (admin only) ----------
+@router.get("/admin/activity")
+async def get_activity(limit: int = 100, user=Depends(require_admin)):
+    return load_activity()[:limit]
 
 
 # Frontend /api altini cagiriyor; kok dizini de guvenlik icin ekliyoruz.

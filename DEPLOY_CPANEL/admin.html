@@ -73,6 +73,7 @@
     <div class="tab on" id="tabKB">📘 Bilgi Bankası</div>
     <div class="tab" id="tabAnn">📣 Duyurular</div>
     <div class="tab" id="tabStaff" style="display:none">👤 Yetkililer</div>
+    <div class="tab" id="tabActivity" style="display:none">🕘 Aktivite</div>
   </div>
 
   <!-- KB -->
@@ -127,6 +128,12 @@
       <button class="btn" style="width:100%; justify-content:center; margin-top:18px;" type="submit">➕ Ekle</button>
     </form>
   </div>
+
+  <!-- Activity (admin only) -->
+  <div id="activitySection" class="panel p6 hidden">
+    <h2 class="title" style="font-size:16px; margin-bottom:12px;">🕘 İşlem Geçmişi</h2>
+    <div id="activityList"></div>
+  </div>
 </div>
 
 <script>
@@ -163,20 +170,22 @@ function showPanel(user){
   $("loginView").classList.add("hidden");
   $("panelView").classList.remove("hidden");
   $("whoami").textContent = user.username + " · " + user.role;
-  if(user.role === "admin"){ $("tabStaff").style.display = "inline-flex"; }
+  if(user.role === "admin"){ $("tabStaff").style.display = "inline-flex"; $("tabActivity").style.display = "inline-flex"; }
   loadKB(); loadAnn();
 }
 
 // ---- Tabs ----
 function switchTab(name){
-  ["KB","Ann","Staff"].forEach(t=>{ const el=$("tab"+t); if(el) el.classList.toggle("on", t===name); });
+  ["KB","Ann","Staff","Activity"].forEach(t=>{ const el=$("tab"+t); if(el) el.classList.toggle("on", t===name); });
   $("kbSection").classList.toggle("hidden", name!=="KB");
   $("annSection").classList.toggle("hidden", name!=="Ann");
   $("staffSection").classList.toggle("hidden", name!=="Staff");
+  $("activitySection").classList.toggle("hidden", name!=="Activity");
 }
 $("tabKB").onclick = ()=>switchTab("KB");
 $("tabAnn").onclick = ()=>switchTab("Ann");
 $("tabStaff").onclick = ()=>{ switchTab("Staff"); loadStaff(); };
+$("tabActivity").onclick = ()=>{ switchTab("Activity"); loadActivity(); };
 
 // ---- Knowledge ----
 async function loadKB(){ try{ const d=await api("/admin/knowledge",{headers:authHead()}); $("kbText").value=d.content; }catch(e){ toast(e.message,false); } }
@@ -260,6 +269,25 @@ async function delStaff(u){
   if(!confirm(u+" hesabı silinsin mi?")) return;
   try{ await api("/admin/staff/"+encodeURIComponent(u),{method:"DELETE",headers:authHead()}); toast("Yetkili silindi"); loadStaff(); }
   catch(e){ toast(e.message,false); }
+}
+
+// ---- Activity ----
+async function loadActivity(){
+  const list=$("activityList");
+  try{
+    const items=await api("/admin/activity",{headers:authHead()});
+    list.innerHTML="";
+    if(!items.length){ list.innerHTML='<div class="muted">Henüz kayıt yok.</div>'; return; }
+    items.forEach(a=>{
+      const el=document.createElement("div"); el.className="ann row";
+      let d; try{ d=new Date(a.timestamp).toLocaleString("tr-TR"); }catch(e){ d=a.timestamp; }
+      el.innerHTML = `<div><span style="color:var(--lime);font-weight:600;">${esc(a.username)}</span>
+        <span style="color:#d4d4d8;"> — ${esc(a.action)}</span>
+        ${a.detail?`<span class="muted"> (${esc(a.detail)})</span>`:""}</div>
+        <span class="muted" style="white-space:nowrap;margin-left:10px;">${esc(d)}</span>`;
+      list.appendChild(el);
+    });
+  }catch(e){ toast(e.message,false); }
 }
 
 // ---- Bootstrap ----

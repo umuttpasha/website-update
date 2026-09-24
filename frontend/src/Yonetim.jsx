@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { motion } from "framer-motion";
 import {
-  LogOut, Save, Plus, Trash2, Pencil, ShieldCheck, BookText, Megaphone, X, ArrowLeft, UserCog,
+  LogOut, Save, Plus, Trash2, Pencil, ShieldCheck, BookText, Megaphone, X, ArrowLeft, UserCog, History,
 } from "lucide-react";
 import { toast, Toaster } from "sonner";
 
@@ -288,6 +288,38 @@ const StaffManager = ({ currentUser }) => {
   );
 };
 
+const ActivityLog = () => {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    axios.get(`${API}/admin/activity`, { headers: authHeader() })
+      .then((r) => setItems(r.data)).catch(() => {}).finally(() => setLoading(false));
+  }, []);
+  const fmt = (iso) => { try { return new Date(iso).toLocaleString("tr-TR"); } catch { return iso; } };
+  return (
+    <div className="tc-panel p-6" data-testid="activity-log">
+      <div className="flex items-center gap-3 mb-4">
+        <History className="w-5 h-5 text-lime-400" />
+        <h2 className="text-lg font-bold tracking-wide uppercase">İşlem Geçmişi</h2>
+      </div>
+      {loading ? <div className="text-sm text-zinc-500">Yükleniyor...</div> :
+        items.length === 0 ? <div className="text-sm text-zinc-500">Henüz kayıt yok.</div> :
+        <div className="space-y-2">
+          {items.map((a, i) => (
+            <div key={i} className="tc-ann flex items-center justify-between" data-testid="activity-row">
+              <div>
+                <span className="font-semibold text-sm text-lime-400">{a.username}</span>
+                <span className="text-sm text-zinc-300"> — {a.action}</span>
+                {a.detail && <span className="text-xs text-zinc-500"> ({a.detail})</span>}
+              </div>
+              <span className="text-xs text-zinc-500 whitespace-nowrap ml-3">{fmt(a.timestamp)}</span>
+            </div>
+          ))}
+        </div>}
+    </div>
+  );
+};
+
 export default function Yonetim() {
   const [user, setUser] = useState(null);
   const [checking, setChecking] = useState(true);
@@ -339,10 +371,15 @@ export default function Yonetim() {
             <button onClick={() => setTab("staff")} className={`tc-tabbtn ${tab === "staff" ? "tc-tabbtn-on" : ""}`}
               data-testid="tab-staff"><UserCog className="w-4 h-4" /> Yetkililer</button>
           )}
+          {user.role === "admin" && (
+            <button onClick={() => setTab("activity")} className={`tc-tabbtn ${tab === "activity" ? "tc-tabbtn-on" : ""}`}
+              data-testid="tab-activity"><History className="w-4 h-4" /> Aktivite</button>
+          )}
         </div>
         {tab === "knowledge" && <KnowledgeEditor />}
         {tab === "announcements" && <AnnouncementsManager />}
         {tab === "staff" && user.role === "admin" && <StaffManager currentUser={user} />}
+        {tab === "activity" && user.role === "admin" && <ActivityLog />}
       </main>
       <Toaster theme="dark" position="top-center" />
     </div>
