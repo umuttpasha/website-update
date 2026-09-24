@@ -43,6 +43,9 @@ iki şey bozuktu: (1) canlı sunucu durumu offline görünüyordu, (2) AI asista
 - Panel: Emergent demo'da React `/yonetim`; cPanel'de kurulum gerektirmeyen tek dosya `admin.html`
   (`api.trapclub.net/yonetim` olarak backend'den servis edilir). Frontend rebuild gerekmez.
 - Yetkililer bilgi bankasını ve duyuruları siteden düzenleyip anında yayınlar.
+- **Yetkili Yönetimi (admin-only):** `require_admin` + `/api/admin/staff` GET/POST/DELETE. Admin panelden
+  yetkili ekler/siler (kendini ve son admin'i silemez, çift kullanıcı 409). "Yetkililer" sekmesi
+  yalnızca admin rolüne görünür. Test: iteration_3 → backend 10/10, frontend %100.
 - Test: iteration_2 → backend 15/15, frontend tüm akışlar PASS.
 
 ## Backlog / Sonraki
