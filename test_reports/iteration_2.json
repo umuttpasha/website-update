@@ -1,0 +1,26 @@
+{
+  "summary": "Tested new admin panel (/yonetim) end-to-end: backend JWT auth + protected admin endpoints, and frontend login/knowledge-editor/announcements manager. 15/15 pytest cases pass (6 pre-existing public + 9 new auth/admin). Full UI flow passes: wrong password rejected, admin/TrapAdmin2026! login reveals panel with both tabs, knowledge textarea prefilled (3482 chars), save shows success toast, announcements CRUD works via admin panel (add -> appears in list -> delete -> back to 3). Public site left in original state: 3 announcements (Trap PvP, Turnuva, Güncelleme) and knowledge base restored. No bugs found.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "/yonetim login form", "issues": ["'Yetkili Girişi' title text uses a dark color on the near-black tc-panel background (see .tc-title style) which renders extremely low-contrast / nearly invisible in the login card. Consider forcing lime/white in the tc-title utility when used inside the login panel."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/backend_test.py", "/app/test_reports/pytest/pytest_results.xml"],
+  "action_items": ["(Optional) Improve contrast of 'Yetkili Girişi' heading on the /yonetim login card"],
+  "critical_code_review_comments": [
+    "server.py: /api/admin/announcements PUT/DELETE use load/save with no locking - fine for single-worker uvicorn, but two simultaneous PUTs on separate items could race and lose one write. Not a blocker for this scale.",
+    "server.py get_current_user reloads staff_users.json on every request; acceptable but could be cached with mtime check.",
+    "Yonetim.jsx uses window.confirm() for delete confirmation; acceptable but inconsistent with the rest of the site's sonner toast UX. Consider AlertDialog from shadcn.",
+    "Login username matching is case-insensitive (login()) but /auth/me matches by exact 'sub' — consistent because token is issued with the canonical username, so no bug, just noting."
+  ],
+  "updated_files": ["/app/backend/tests/backend_test.py"],
+  "success_rate": {"backend": "100% (15/15)", "frontend": "100% (all flows)"},
+  "test_credentials": "admin / TrapAdmin2026! (role admin), mod / TrapMod2026! (role mod) - file-based, from staff_users.json",
+  "seed_data_creation": "None persisted. During testing an announcement was created and deleted; knowledge base was appended with a marker and then restored to original content. Verified 3 announcements + original KB remain.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "backend_test.py now covers auth (login admin/mod/wrong, /auth/me with & without token), admin protection (401 without Bearer), knowledge round-trip w/ restore, and announcements CRUD w/ cleanup. Frontend testids used on /yonetim: admin-login-form, admin-username-input, admin-password-input, admin-login-button, tab-knowledge, tab-announcements, knowledge-textarea, knowledge-save-button, announcement-form, ann-title-input, ann-tag-input, ann-body-input, ann-submit-button, admin-ann-<id>, edit-ann-<id>, delete-ann-<id>, admin-logout-button. Delete uses window.confirm — handle via page.on('dialog', accept)."
+}

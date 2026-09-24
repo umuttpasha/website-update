@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>TrapClub Yönetim</title>
+<style>
+  :root { --lime:#a3e635; --ink:#0a0a0b; --panel:#151517; --panel2:#101012; --border:#26262a; --row:#0d0d0f; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--ink); color:#e4e4e7; font-family:'Segoe UI',Roboto,sans-serif; }
+  a { color:var(--lime); text-decoration:none; }
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 24px 20px 60px; }
+  .panel { background:linear-gradient(180deg,var(--panel),var(--panel2)); border:1px solid var(--border); border-radius:14px; }
+  .p6 { padding:24px; }
+  .row { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  .title { font-weight:800; letter-spacing:-0.5px; }
+  .muted { color:#71717a; font-size:12px; }
+  .label { font-size:11px; text-transform:uppercase; letter-spacing:0.12em; color:#71717a; display:block; margin:10px 0 4px; }
+  input, textarea { width:100%; background:var(--row); border:1px solid var(--border); border-radius:10px; padding:11px 14px; color:#e4e4e7; font-size:15px; outline:none; }
+  input:focus, textarea:focus { border-color:var(--lime); }
+  textarea { min-height:420px; font-family:Consolas,Monaco,monospace; font-size:13px; line-height:1.6; resize:vertical; }
+  textarea.small { min-height:120px; }
+  .btn { display:inline-flex; align-items:center; gap:8px; background:var(--lime); color:var(--ink); font-weight:700; padding:10px 16px; border:none; border-radius:10px; cursor:pointer; font-size:14px; }
+  .btn:disabled { opacity:0.5; cursor:default; }
+  .btn-ghost { background:#141416; border:1px solid var(--border); color:#a1a1aa; }
+  .tag { display:inline-block; font-size:10px; text-transform:uppercase; letter-spacing:0.1em; font-weight:700; color:var(--lime); background:rgba(163,230,53,0.1); border:1px solid rgba(163,230,53,0.25); padding:2px 8px; border-radius:999px; }
+  .tabs { display:flex; gap:8px; margin:20px 0; }
+  .tab { display:inline-flex; align-items:center; gap:8px; padding:9px 16px; border-radius:10px; background:#141416; border:1px solid var(--border); color:#a1a1aa; font-weight:600; cursor:pointer; }
+  .tab.on { background:var(--lime); color:var(--ink); border-color:var(--lime); }
+  .ann { background:var(--row); border:1px solid var(--border); border-radius:10px; padding:12px 14px; margin-bottom:10px; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  @media(max-width:760px){ .grid2 { grid-template-columns:1fr; } }
+  .iconbtn { background:#1a1a1d; border:1px solid var(--border); color:#a1a1aa; border-radius:8px; width:30px; height:30px; cursor:pointer; }
+  .iconbtn.danger:hover { border-color:#f87171; color:#f87171; }
+  .center { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px; }
+  .maxw { max-width:380px; width:100%; }
+  .toast { position:fixed; top:20px; left:50%; transform:translateX(-50%); background:#18181b; border:1px solid var(--border); color:#fff; padding:12px 18px; border-radius:10px; display:none; z-index:50; }
+  .hidden { display:none !important; }
+  h1,h2,h3 { margin:0; }
+</style>
+</head>
+<body>
+<div id="toast" class="toast"></div>
+
+<!-- LOGIN -->
+<div id="loginView" class="center">
+  <form id="loginForm" class="panel p6 maxw">
+    <h1 class="title" style="font-size:20px;">🛡️ Yetkili Girişi</h1>
+    <div class="muted" style="margin-top:4px;">TrapClub Yönetim Paneli</div>
+    <label class="label">Kullanıcı Adı</label>
+    <input id="username" placeholder="admin" autocomplete="username" />
+    <label class="label">Şifre</label>
+    <input id="password" type="password" placeholder="••••••••" autocomplete="current-password" />
+    <button class="btn" style="width:100%; justify-content:center; margin-top:20px;" type="submit">Giriş Yap</button>
+    <div style="text-align:center; margin-top:14px;"><a href="https://trapclub.net">← Siteye dön</a></div>
+  </form>
+</div>
+
+<!-- PANEL -->
+<div id="panelView" class="wrap hidden">
+  <div class="row">
+    <div>
+      <h1 class="title" style="font-size:20px;">TRAP<span style="color:var(--lime)">CLUB</span> Yönetim</h1>
+      <div class="muted" id="whoami"></div>
+    </div>
+    <div style="display:flex; gap:10px;">
+      <a class="tab" href="https://trapclub.net">Siteye Dön</a>
+      <button class="btn" id="logoutBtn">Çıkış</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab on" id="tabKB">📘 Bilgi Bankası</div>
+    <div class="tab" id="tabAnn">📣 Duyurular</div>
+  </div>
+
+  <!-- KB -->
+  <div id="kbSection" class="panel p6">
+    <div class="row" style="margin-bottom:12px;">
+      <h2 class="title" style="font-size:16px;">Bilgi Bankası</h2>
+      <button class="btn" id="kbSave">💾 Kaydet & Yayınla</button>
+    </div>
+    <div class="muted" style="margin-bottom:10px;">Bu metni AI asistan cevap üretirken kullanır. Kaydedince anında yayına girer.</div>
+    <textarea id="kbText" spellcheck="false"></textarea>
+  </div>
+
+  <!-- Announcements -->
+  <div id="annSection" class="grid2 hidden">
+    <div class="panel p6">
+      <h2 class="title" style="font-size:16px; margin-bottom:12px;">📣 Duyurular</h2>
+      <div id="annList"></div>
+    </div>
+    <form id="annForm" class="panel p6" style="align-self:start;">
+      <div class="row"><h3 class="title" style="font-size:15px;" id="annFormTitle">Yeni Duyuru</h3>
+        <button type="button" id="annCancel" class="iconbtn hidden">✕</button></div>
+      <input type="hidden" id="annId" />
+      <label class="label">Başlık</label>
+      <input id="annTitle" required />
+      <label class="label">Etiket (örn: Turnuva, Güncelleme)</label>
+      <input id="annTag" required />
+      <label class="label">İçerik</label>
+      <textarea id="annBody" class="small" required></textarea>
+      <label class="label">Görsel URL (opsiyonel)</label>
+      <input id="annImage" />
+      <button class="btn" style="width:100%; justify-content:center; margin-top:18px;" type="submit" id="annSubmit">Ekle & Yayınla</button>
+    </form>
+  </div>
+</div>
+
+<script>
+const API = "/api";
+const TK = "tc_token";
+const token = () => localStorage.getItem(TK) || "";
+const authHead = () => ({ "Authorization": "Bearer " + token(), "Content-Type": "application/json" });
+function toast(msg, ok=true){ const t=document.getElementById("toast"); t.textContent=msg; t.style.display="block"; t.style.borderColor=ok?"#3f6212":"#7f1d1d"; setTimeout(()=>t.style.display="none",2600); }
+const $ = (id) => document.getElementById(id);
+
+async function api(path, opts={}){
+  const res = await fetch(API+path, opts);
+  if(!res.ok){ let d; try{d=await res.json();}catch(e){} throw new Error((d&&d.detail)||("Hata "+res.status)); }
+  return res.status===204?null:res.json();
+}
+
+// ---- Auth ----
+$("loginForm").addEventListener("submit", async (e)=>{
+  e.preventDefault();
+  try{
+    const data = await api("/auth/login",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({username:$("username").value, password:$("password").value})});
+    localStorage.setItem(TK, data.access_token);
+    toast("Hoş geldin, "+data.user.username);
+    showPanel(data.user);
+  }catch(err){ toast(err.message,false); }
+});
+
+$("logoutBtn").addEventListener("click", ()=>{ localStorage.removeItem(TK); location.reload(); });
+
+function showPanel(user){
+  $("loginView").classList.add("hidden");
+  $("panelView").classList.remove("hidden");
+  $("whoami").textContent = user.username + " · " + user.role;
+  loadKB(); loadAnn();
+}
+
+// ---- Tabs ----
+$("tabKB").onclick = ()=>{ $("tabKB").classList.add("on"); $("tabAnn").classList.remove("on"); $("kbSection").classList.remove("hidden"); $("annSection").classList.add("hidden"); };
+$("tabAnn").onclick = ()=>{ $("tabAnn").classList.add("on"); $("tabKB").classList.remove("on"); $("annSection").classList.remove("hidden"); $("kbSection").classList.add("hidden"); };
+
+// ---- Knowledge ----
+async function loadKB(){ try{ const d=await api("/admin/knowledge",{headers:authHead()}); $("kbText").value=d.content; }catch(e){ toast(e.message,false); } }
+$("kbSave").addEventListener("click", async ()=>{
+  try{ await api("/admin/knowledge",{method:"PUT",headers:authHead(),body:JSON.stringify({content:$("kbText").value})});
+    toast("Bilgi bankası yayınlandı ✅"); }catch(e){ toast(e.message,false); }
+});
+
+// ---- Announcements ----
+async function loadAnn(){
+  const items = await api("/announcements");
+  const list = $("annList"); list.innerHTML="";
+  if(!items.length){ list.innerHTML='<div class="muted">Duyuru yok.</div>'; }
+  items.forEach(a=>{
+    const el=document.createElement("div"); el.className="ann";
+    el.innerHTML = `<div class="row"><span class="tag">${esc(a.tag)}</span>
+      <span><button class="iconbtn" data-edit="${a.id}">✎</button>
+      <button class="iconbtn danger" data-del="${a.id}">🗑</button></span></div>
+      <div style="font-weight:600; font-size:14px; margin-top:6px;">${esc(a.title)}</div>
+      <div class="muted" style="margin-top:4px;">${esc(a.body).slice(0,120)}</div>`;
+    el.querySelector("[data-edit]").onclick=()=>editAnn(a);
+    el.querySelector("[data-del]").onclick=()=>delAnn(a.id);
+    list.appendChild(el);
+  });
+}
+function esc(s){ return (s||"").replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])); }
+
+function editAnn(a){
+  $("annId").value=a.id; $("annTitle").value=a.title; $("annTag").value=a.tag;
+  $("annBody").value=a.body; $("annImage").value=a.image||"";
+  $("annFormTitle").textContent="Duyuruyu Düzenle"; $("annSubmit").textContent="Güncelle";
+  $("annCancel").classList.remove("hidden");
+  $("tabAnn").click();
+}
+$("annCancel").onclick=()=>resetAnnForm();
+function resetAnnForm(){ $("annForm").reset(); $("annId").value=""; $("annFormTitle").textContent="Yeni Duyuru"; $("annSubmit").textContent="Ekle & Yayınla"; $("annCancel").classList.add("hidden"); }
+
+$("annForm").addEventListener("submit", async (e)=>{
+  e.preventDefault();
+  const payload={ title:$("annTitle").value, tag:$("annTag").value, body:$("annBody").value, image:$("annImage").value||null };
+  const id=$("annId").value;
+  try{
+    if(id){ await api("/admin/announcements/"+id,{method:"PUT",headers:authHead(),body:JSON.stringify(payload)}); toast("Duyuru güncellendi"); }
+    else{ await api("/admin/announcements",{method:"POST",headers:authHead(),body:JSON.stringify(payload)}); toast("Duyuru eklendi ve yayınlandı"); }
+    resetAnnForm(); loadAnn();
+  }catch(err){ toast(err.message,false); }
+});
+
+async function delAnn(id){
+  if(!confirm("Bu duyuru silinsin mi?")) return;
+  try{ await api("/admin/announcements/"+id,{method:"DELETE",headers:authHead()}); toast("Duyuru silindi"); loadAnn(); }
+  catch(e){ toast(e.message,false); }
+}
+
+// ---- Bootstrap ----
+(async ()=>{
+  if(token()){
+    try{ const u=await api("/auth/me",{headers:authHead()}); showPanel(u); }
+    catch(e){ localStorage.removeItem(TK); }
+  }
+})();
+</script>
+</body>
+</html>

@@ -35,6 +35,16 @@ iki şey bozuktu: (1) canlı sunucu durumu offline görünüyordu, (2) AI asista
 - Not: Bu sandbox'tan Minecraft sunucusuna ağ erişimi olmadığı için `online:false` — bu beklenen.
   Gerçek cPanel sunucusunda doğru port ile online/oyuncu sayısı dönecektir.
 
+## Yetkili Paneli (2026-06 — eklendi)
+- JWT (PyJWT HS256) + bcrypt, **dosya tabanlı çoklu hesap** (`staff_users.json`, otomatik seed) — DB yok.
+- Endpoint'ler: `/api/auth/login`, `/api/auth/me`, `/api/admin/knowledge` (GET/PUT),
+  `/api/admin/announcements` (POST/PUT/DELETE). Tümü Bearer token korumalı.
+- Varsayılan hesaplar: admin/TrapAdmin2026!, mod/TrapMod2026! (`.env`'den değiştirilebilir).
+- Panel: Emergent demo'da React `/yonetim`; cPanel'de kurulum gerektirmeyen tek dosya `admin.html`
+  (`api.trapclub.net/yonetim` olarak backend'den servis edilir). Frontend rebuild gerekmez.
+- Yetkililer bilgi bankasını ve duyuruları siteden düzenleyip anında yayınlar.
+- Test: iteration_2 → backend 15/15, frontend tüm akışlar PASS.
+
 ## Backlog / Sonraki
 - P1: server/status için birkaç saniyelik cache (burst trafikte MC sorgusunu azaltmak).
 - P2: CORS'u production'da trapclub.net'e sabitlemek.

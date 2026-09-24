@@ -32,7 +32,7 @@ const Login = ({ onLogin }) => {
   };
 
   return (
-    <div className="tc-root min-h-screen flex items-center justify-center px-5">
+    <div className="tc-root min-h-screen flex items-center justify-center px-5 text-zinc-100">
       <div className="tc-grid-bg" />
       <motion.form
         onSubmit={submit}

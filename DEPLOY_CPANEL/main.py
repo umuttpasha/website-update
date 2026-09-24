@@ -30,7 +30,7 @@ from pathlib import Path
 from datetime import datetime, timezone, timedelta
 
 from fastapi import FastAPI, APIRouter, Depends, HTTPException, Header
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, HTMLResponse
 from starlette.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
@@ -55,6 +55,7 @@ TOKEN_HOURS = 12
 KB_PATH = ROOT_DIR / "knowledge_base.md"
 ANN_PATH = ROOT_DIR / "announcements.json"
 STAFF_PATH = ROOT_DIR / "staff_users.json"
+ADMIN_HTML = ROOT_DIR / "admin.html"
 
 
 # ---------- Data helpers ----------
@@ -173,6 +174,16 @@ seed_staff()
 
 app = FastAPI(title="TrapClub API")
 router = APIRouter()
+
+
+# Yetkili paneli (tek dosyalik HTML) - api.trapclub.net/yonetim
+@app.get("/yonetim", response_class=HTMLResponse)
+@app.get("/admin", response_class=HTMLResponse)
+async def admin_page():
+    try:
+        return HTMLResponse(ADMIN_HTML.read_text(encoding="utf-8"))
+    except Exception:
+        return HTMLResponse("<h1>admin.html bulunamadi</h1>", status_code=404)
 
 
 # ---------- Models ----------
