@@ -1,0 +1,32 @@
+[
+  {
+    "id": "c4ffa3fd-6a07-4c12-8899-4b592aabf595",
+    "title": "TrapClub Sezon 4 Yeni Sezon 15 Temmuz",
+    "tag": "Trap PvP",
+    "body": "Yeni sezon tanıtım videosu ve içerikleri incelemek için okuyabilirsiniz. Obsidian kasa sistemi, yeni tuzak mekanikleri ve sıfırlanan ekonomi ile arena yeniden açılıyor. Sezon açılışında ilk 100 oyuncuya özel başlangıç kiti dağıtılacak.",
+    "image": "/img/hero.jpg",
+    "author": "Admin",
+    "created_at": "2026-09-23T23:07:46.468039+00:00",
+    "updated_at": "2026-09-23T23:07:46.468039+00:00"
+  },
+  {
+    "id": "dd4532a3-bc88-447a-af01-ec2e5e300442",
+    "title": "10.000 TL Ödüllü Klan Turnuvası Kayıtları Açıldı",
+    "tag": "Turnuva",
+    "body": "Her Pazar 20:00'de başlayan klan turnuvasına kayıtlar Discord üzerinden alınıyor. İlk 3 klan ödül havuzundan pay alacak. Kayıt için Discord sunucumuza katılıp turnuva kanalına yazman yeterli.",
+    "image": null,
+    "author": "Admin",
+    "created_at": "2026-09-23T22:17:46.468236+00:00",
+    "updated_at": "2026-09-23T22:17:46.468236+00:00"
+  },
+  {
+    "id": "9a75fcb8-5e9f-404c-a0de-5fb9c1a0dbe8",
+    "title": "TrapClub Anti-Cheat 5.0 Yayında",
+    "tag": "Güncelleme",
+    "body": "Killaura, Reach ve Auto-Clicker tespiti yeniden yazıldı. Sunucu artık 128-tick üzerinde çalışıyor ve gecikme büyük oranda azaldı. Şüpheli oyuncuları /report komutu ile bize bildirebilirsin.",
+    "image": null,
+    "author": "Admin",
+    "created_at": "2026-09-23T20:17:46.468295+00:00",
+    "updated_at": "2026-09-23T20:17:46.468295+00:00"
+  }
+]
