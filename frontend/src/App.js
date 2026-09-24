@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import "@/App.css";
 import axios from "axios";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Yonetim from "@/Yonetim";
 import { motion } from "framer-motion";
 import {
   Server, Users, Gauge, Copy, Check, Send, MessageSquare,
@@ -210,7 +212,7 @@ const ChatPanel = () => {
   );
 };
 
-function App() {
+function HomePage() {
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [announcements, setAnnouncements] = useState([]);
@@ -288,6 +290,17 @@ function App() {
         TrapClub © {new Date().getFullYear()} · {SERVER_IP}
       </footer>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/yonetim" element={<Yonetim />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 
